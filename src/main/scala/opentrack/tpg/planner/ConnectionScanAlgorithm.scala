@@ -4,6 +4,7 @@ import opentrack.tpg.journey._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 /**
   * Created by linus on 30/09/16.
@@ -102,4 +103,58 @@ class ConnectionScanAlgorithm(timetable: TimetableSchedule, nonTimetable: NonTim
       case Some(legs) => Some(Journey(legs))
     }
   }
+
+  def getShortestPathTree(origin: Station): MST = {
+    val bestJourneys: MST = mutable.HashMap()
+    var workingTimetable = this.timetable
+
+    @tailrec def getBestJourneys(departureTime: Time): Any = {
+      if (workingTimetable.nonEmpty)
+        getBestJourneys(mergeMST(getEarliestArrivalTree(departureTime)))
+    }
+
+    def mergeMST(earliestArrivals: mutable.HashMap[Station, Time]) = {
+      var nextDepartureTime = Integer.MAX_VALUE
+
+      earliestArrivals.map { case (station, time) =>
+        getJourneyFromConnections(origin, station).map(journey => {
+          nextDepartureTime = Math.min(nextDepartureTime, journey.departureTime)
+
+          bestJourneys.get(station) match {
+            case None => bestJourneys.put(station, mutable.HashMap(time -> journey))
+            case Some(times) => times.put(time, journey)
+          }
+        })
+      }
+
+      nextDepartureTime + 1
+    }
+
+    def getEarliestArrivalTree(departureTime: Time) = {
+      //println("Departure time: " + departureTime + ", connections: " + workingTimetable.length)
+      var newTimetable = ListBuffer[TimetableConnection]()
+      arrivals = mutable.HashMap(origin -> departureTime)
+      connections = mutable.HashMap()
+
+      workingTimetable.foreach(connection => {
+        if (canGetToConnection(connection)) {
+          newTimetable = newTimetable += connection
+
+          if (connectionIsBetter(connection)) {
+            connections.put(connection.destination, connection)
+            arrivals.put(connection.destination, connection.arrivalTime)
+
+            checkForBetterNonTimetableConnections(connection.destination, connection.arrivalTime)
+          }
+        }
+      })
+
+      workingTimetable = newTimetable.toList
+      arrivals
+    }
+
+    getBestJourneys(1)
+    bestJourneys
+  }
+
 }

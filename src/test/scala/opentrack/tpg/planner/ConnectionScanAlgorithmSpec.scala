@@ -362,4 +362,239 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
     actual should be(Some(expected))
   }
 
+  it should "shortest path tree" in {
+    val timetable = List(
+      TimetableConnection("SEV", "ORP", ConnectionType.TRAIN, 900, 940, "SE1000", "LN"),
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN")
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val actual = scanner.getShortestPathTree("SEV")
+    val expected = mutable.HashMap(
+      "ORP" -> mutable.HashMap(
+        940-> Journey(List(
+          Leg(List(
+            TimetableConnection("SEV", "ORP", ConnectionType.TRAIN, 900, 940, "SE1000", "LN")
+          ))
+        ))
+      ),
+      "WAE" -> mutable.HashMap(
+        1040-> Journey(List(
+          Leg(List(
+            TimetableConnection("SEV", "ORP", ConnectionType.TRAIN, 900, 940, "SE1000", "LN"),
+            TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN")
+          ))
+        ))
+      )
+    )
+
+    actual should be (expected)
+  }
+
+
+  it should "shortest path tree with change" in {
+    val timetable = List(
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN"),
+      TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE1000", "LN"),
+      TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1050, 1055, "SE2000", "LN"),
+      TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1052, 1053, "SE2500", "LN"),
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN")
+    )
+
+    val nonTimetable = mutable.HashMap(
+      "WAE" -> List(
+        NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 19, 0, 2359)
+      )
+    )
+
+    val interchange = mutable.HashMap(
+      "CHX" -> 5
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
+    val actual = scanner.getShortestPathTree("ORP")
+    val expected = mutable.HashMap(
+      "WAE" -> mutable.HashMap(
+        1040 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN")))
+        )),
+        1140 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN")))
+        ))
+      ),
+      "LBG" -> mutable.HashMap(
+        1053 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN"),
+            TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE1000", "LN"))),
+          Leg(List(TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1052, 1053, "SE2500", "LN")))
+        )),
+        1159 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN"))),
+          Leg(List(NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 19, 0, 2359)))
+        ))
+      ),
+      "CHX" -> mutable.HashMap(
+        1045 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN"),
+            TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE1000", "LN")))
+        ))
+      )
+    )
+
+    actual should be(expected)
+  }
+
+
+  it should "transfer patterns with change" in {
+    val timetable = List(
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN"),
+      TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE1000", "LN"),
+      TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1050, 1055, "SE2000", "LN"),
+      TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1052, 1053, "SE2500", "LN"),
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN")
+    )
+
+    val nonTimetable = mutable.HashMap(
+      "WAE" -> List(
+        NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 5, 0, 2359)
+      )
+    )
+
+    val interchange = mutable.HashMap(
+      "CHX" -> 5
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
+    val actual = scanner.getShortestPathTree("ORP")
+    val expected = mutable.HashMap(
+      "WAE" -> mutable.HashMap(
+        1040-> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN") ))
+        )),
+        1140-> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN") ))
+        ))
+      ),
+      "LBG" -> mutable.HashMap(
+        1045-> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN"))),
+          Leg(List(NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 5, 0, 2359)))
+        )),
+        1145-> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN"))),
+          Leg(List(NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 5, 0, 2359)))
+        ))
+      ),
+      "CHX" -> mutable.HashMap(
+        1045-> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN"),
+            TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE1000", "LN") ))
+        ))
+      )
+    )
+
+    actual should be (expected)
+  }
+
+
+  it should "transfer patterns with latest departure" in {
+    val timetable = List(
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1020, "SE1000", "LN"),
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1030, 1040, "SE2000", "LN"),
+      TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE2000", "LN"),
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1120, "SE3000", "LN"),
+      TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1130, 1140, "SE4000", "LN"),
+      TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1140, 1145, "SE4000", "LN")
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val actual = scanner.getShortestPathTree("ORP")
+    val expected = mutable.HashMap(
+      "WAE" -> mutable.HashMap(
+        1020 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1020, "SE1000", "LN")))
+        )),
+        1040 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1030, 1040, "SE2000", "LN")))
+        )),
+        1120 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1120, "SE3000", "LN")))
+        )),
+        1140 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1130, 1140, "SE4000", "LN")))
+        ))
+      ),
+      "CHX" -> mutable.HashMap(
+        1045 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1030, 1040, "SE2000", "LN"),
+            TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1040, 1045, "SE2000", "LN")))
+        )),
+        1145 -> Journey(List(
+          Leg(List(TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1130, 1140, "SE4000", "LN"),
+            TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1140, 1145, "SE4000", "LN")))
+        ))
+      )
+    )
+
+    actual should be(expected)
+  }
+
+
+  /**
+    * This is modelled on a real world scenario between CHX and PDW with
+    * unnecessary changes at WAE. Happens at virtually any time
+    */
+  it should "transfer patterns without unnecessary changes at the start" in {
+    val timetable = List(
+      TimetableConnection("A", "B", ConnectionType.TRAIN, 1000, 1010, "CS1000", "LN"),
+      TimetableConnection("A", "B", ConnectionType.TRAIN, 1010, 1015, "CS1001", "LN"),
+      TimetableConnection("B", "C", ConnectionType.TRAIN, 1020, 1045, "CS1001", "LN")
+    )
+
+    val interchange = mutable.HashMap(
+      "A" -> 1,
+      "B" -> 1
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), interchange)
+    val actual = scanner.getJourney("A", "C", 900)
+    val expected = Journey(List(
+      Leg(List(
+        TimetableConnection("A", "B", ConnectionType.TRAIN, 1010, 1015, "CS1001", "LN"),
+        TimetableConnection("B", "C", ConnectionType.TRAIN, 1020, 1045, "CS1001", "LN")
+      ))
+    ))
+    actual should be(Some(expected))
+  }
+
+
+  /**
+    * This is modelled on MYB -> WWW at 20:00 on a weekday. It puts you on a
+    * train to Haddenham when you could just wait an extra 3 mins at MYB.
+    *
+    * The connection from MYB to Haddenham actually has less calling points
+    * but it doesn't matter as it still connects to the MYB service.
+    */
+  it should "transfer patterns without unnecessary changes at the start 2" in {
+    val timetable = List(
+      TimetableConnection("A", "B", ConnectionType.TRAIN, 1000, 1010, "CS1000", "LN"),
+      TimetableConnection("B", "C", ConnectionType.TRAIN, 1011, 1012, "CS1000", "LN"),
+      TimetableConnection("A", "C", ConnectionType.TRAIN, 1005, 1015, "CS1001", "LN"),
+      TimetableConnection("C", "D", ConnectionType.TRAIN, 1020, 1045, "CS1001", "LN")
+    )
+
+    val interchange = mutable.HashMap(
+      "C" -> 1
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), interchange)
+    val actual = scanner.getJourney("A", "D", 900)
+    val expected = Journey(List(
+      Leg(List(
+        TimetableConnection("A", "C", ConnectionType.TRAIN, 1005, 1015, "CS1001", "LN"),
+        TimetableConnection("C", "D", ConnectionType.TRAIN, 1020, 1045, "CS1001", "LN")
+      ))
+    ))
+    actual should be(Some(expected))
+  }
 }
