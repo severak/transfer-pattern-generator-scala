@@ -10,7 +10,7 @@ import scalikejdbc._
 /**
   * Created by linus on 08/10/16.
   */
-class ConnectionRepository(db: DB) {
+class ConnectionRepository() {
 
   val connectionBuilder = (rs: WrappedResultSet) => TimetableConnection(
     rs.string("origin"),
@@ -31,7 +31,7 @@ class ConnectionRepository(db: DB) {
     FROM timetable_connection
     WHERE ${date} BETWEEN start_date AND end_date
     AND departure_time >= "05:00"
-    AND tuesday = 1
+    AND ${SQLSyntax.createUnsafely(dow)} = 1
     ORDER BY arrival_time
     """.map(connectionBuilder).list.apply()
   }
@@ -59,7 +59,7 @@ class ConnectionRepository(db: DB) {
         TIME_TO_SEC(end_time) as end_time
     FROM links
     WHERE ${date} BETWEEN start_date AND end_date
-    AND tuesday = 1
+    AND ${SQLSyntax.createUnsafely(dow)} = 1
     """.map(nonTimetableConnectionBuilder).list.apply().foldLeft(Map[Station, List[NonTimetableConnection]]()) { (result: NonTimetableSchedule, connection: NonTimetableConnection) =>
       result.get(connection.origin) match {
         case Some(l) => result + (connection.origin -> (l :+ connection))

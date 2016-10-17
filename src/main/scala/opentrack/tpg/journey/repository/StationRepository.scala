@@ -6,7 +6,7 @@ import scalikejdbc._
 /**
   * Created by linus on 08/10/16.
   */
-class StationRepository(db: DB) {
+class StationRepository() {
   val crsOnly = (rs: WrappedResultSet) => rs.string("stop_code")
 
   lazy val stations: List[Station] = DB localTx { implicit session =>

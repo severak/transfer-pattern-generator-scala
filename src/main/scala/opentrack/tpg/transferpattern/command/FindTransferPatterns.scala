@@ -21,15 +21,13 @@ class FindTransferPatterns(patternRepository: TransferPatternRepository, station
 
     stations.par.foreach { case (station: String) =>
       val csa = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
-      csa.getShortestPathTree(station)
+
+      patternRepository.storeTransferPatterns(station, csa.getShortestPathTree(station))
+
       println("Done " + station)
     }
-    //.get("WWW") match {
-//    case Some(results) => results.toSeq.sortBy(_._1).foreach { case (time, journey) => println(time + " -> " + journey.hash) }
-//    case None => println("Nothing found")
-//  }
-    println("Non-timetable connections " + nonTimetable.size)
-    println("Interchange " + interchange.size)
+
+    patternRepository.updateLastScanDate(scanDate)
   }
 
 }
