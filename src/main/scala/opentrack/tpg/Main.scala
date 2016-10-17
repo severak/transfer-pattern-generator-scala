@@ -3,7 +3,6 @@ package opentrack.tpg
 import opentrack.tpg.journey.repository.{ConnectionRepository, StationRepository}
 import opentrack.tpg.transferpattern.command.FindTransferPatterns
 import opentrack.tpg.transferpattern.repository.TransferPatternRepository
-import scalikejdbc._
 import scalikejdbc.config._
 
 /**

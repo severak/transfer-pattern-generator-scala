@@ -13,3 +13,16 @@ libraryDependencies ++= Seq(
   "ch.qos.logback"  %  "logback-classic"     % "1.1.7",
   "mysql"           % "mysql-connector-java" % "5.1.40"
 )
+
+lazy val commonSettings = Seq(
+  version := "0.1-SNAPSHOT",
+  organization := "ai.rail",
+  scalaVersion := "2.11.8",
+  test in assembly := {}
+)
+
+lazy val app = (project in file("app")).
+  settings(commonSettings: _*).
+  settings(
+    mainClass in assembly := Some("opentrack.tpg.Main")
+  )

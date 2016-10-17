@@ -22,28 +22,14 @@ class TransferPatternRepository() {
   }
 
   def storeTransferPatterns(station: Station, patterns: MST) = DB localTx { implicit session =>
-    val storedPatterns = getStoredPatterns(station)
-
-    for (
+    val inserts = for (
       (station, journeys) <- patterns;
-      (time, journey) <- journeys if !storedPatterns.contains(journey.hash) && journey.legs.length < 8 && journey.duration < 60000
-    ) {
-      val id = sql"INSERT INTO transfer_pattern VALUES (null, ${journey.origin}, ${journey.destination}, ${journey.duration}, SEC_TO_TIME(${journey.departureTime}), SEC_TO_TIME(${journey.departureTime}))".updateAndReturnGeneratedKey.apply()
+      (time, journey) <- journeys if journey.legs.length < 8
+    ) yield Seq(journey.hash, journey.origin, journey.destination)
 
-      for (leg <- journey.legs) {
-        sql"INSERT INTO transfer_pattern_leg VALUES (null, ${id}, ${leg.origin}, ${leg.destination})".update.apply()
-      }
-    }
-  }
-
-  def getStoredPatterns(station: Station) = DB localTx { implicit session =>
     sql"""
-       SELECT concat(tp.origin, tp.destination, group_concat(leg.origin, leg.destination separator '')) as hash, journey_duration
-       FROM transfer_pattern tp
-       JOIN transfer_pattern_leg leg ON leg.transfer_pattern = tp.id
-       WHERE tp.origin = $station
-       GROUP BY tp.id
-    """.map(rs => rs.string("hash") -> true).list.apply().toMap
+        INSERT IGNORE INTO pattern (id, origin, destination) VALUES (?, ?, ?)
+      """.batch(inserts.toSeq: _*).apply()
   }
 
 }

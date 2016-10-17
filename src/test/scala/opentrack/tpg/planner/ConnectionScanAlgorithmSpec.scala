@@ -3,7 +3,9 @@ package opentrack.tpg.planner
 import opentrack.tpg.journey._
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable
+import scala.collection.parallel.immutable
 
 /**
   * Created by linus on 30/09/16.
@@ -17,7 +19,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1100, 1115, "CS1234", "CS")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Some(Journey(List(Leg(timetable))))
 
@@ -32,7 +34,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("D", "E", ConnectionType.TRAIN, 1115, 1120, "CS1234", "CS")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(
@@ -56,7 +58,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("D", "E", ConnectionType.TRAIN, 1120, 1135, "CS1234", "CS")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getJourney("A", "E", 900)
     val expected = Journey(List(
       Leg(List(
@@ -77,7 +79,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("D", "E", ConnectionType.TRAIN, 1120, 1135, "CS1234", "CS")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getJourney("A", "E", 900)
     val expected = None
 
@@ -94,7 +96,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("D", "E", ConnectionType.TRAIN, 1120, 1135, "CS1234", "LN")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getJourney("A", "E", 900)
     val expected = None
 
@@ -109,14 +111,14 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1100, 1115, "CS1234", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "B" -> List(
         NonTimetableConnection("B", "C", ConnectionType.TUBE, 5, 0, 2359),
         NonTimetableConnection("B", "E", ConnectionType.TUBE, 5, 0, 2359)
       )
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(TimetableConnection("A", "B", ConnectionType.TRAIN, 1000, 1015, "CS1234", "LN"))),
@@ -135,14 +137,14 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1100, 1115, "CS1234", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "B" -> List(
         NonTimetableConnection("B", "C", ConnectionType.TUBE, 5, 100, 200),
         NonTimetableConnection("B", "E", ConnectionType.TUBE, 5, 0, 2359)
       )
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(
@@ -163,14 +165,14 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1100, 1115, "CS1234", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "B" -> List(
         NonTimetableConnection("B", "C", ConnectionType.TUBE, 500, 0, 2359),
         NonTimetableConnection("B", "E", ConnectionType.TUBE, 5, 0, 2359)
       )
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(
@@ -191,13 +193,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1100, 1115, "CS1234", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "A" -> List(
         NonTimetableConnection("A", "B", ConnectionType.TUBE, 5, 0, 2359)
       )
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(NonTimetableConnection("A", "B", ConnectionType.TUBE, 5, 0, 2359))),
@@ -215,13 +217,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1100, 1115, "CS1234", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "A" -> List(
         NonTimetableConnection("A", "D", ConnectionType.TUBE, 5, 0, 2359)
       )
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, nonTimetable, HashMap())
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(NonTimetableConnection("A", "D", ConnectionType.TUBE, 5, 0, 2359)))
@@ -236,13 +238,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1045, 1115, "CS2000", "LN")
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "A" -> 5,
       "B" -> 5,
       "C" -> 5
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), interchange)
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(TimetableConnection("A", "B", ConnectionType.TRAIN, 1000, 1015, "CS1000", "LN"))),
@@ -261,13 +263,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1045, 1115, "CS2000", "LN")
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "A" -> 6,
       "B" -> 6,
       "C" -> 6
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), interchange)
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), interchange)
     val actual = scanner.getJourney("A", "D", 900)
     val expected = None
     actual should be(expected)
@@ -281,13 +283,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1105, 1110, "SE2000", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "WAE" -> List(
         NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 20, 0, 2359)
       )
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "CHX" -> 10
     )
 
@@ -308,13 +310,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("CHX", "LBG", ConnectionType.TRAIN, 1050, 1055, "SE2000", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "WAE" -> List(
         NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 20, 0, 2359)
       )
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "CHX" -> 5
     )
 
@@ -340,14 +342,14 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("D", "E", ConnectionType.TRAIN, 1038, 1042, "CS2000", "LN")
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "A" -> 5,
       "B" -> 5,
       "C" -> 5,
       "D" -> 5
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), interchange)
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), interchange)
     val actual = scanner.getJourney("A", "E", 900)
     val expected = Journey(List(
       Leg(List(
@@ -368,7 +370,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1000, 1040, "SE1000", "LN")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getShortestPathTree("SEV")
     val expected = mutable.HashMap(
       "ORP" -> mutable.HashMap(
@@ -401,13 +403,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "WAE" -> List(
         NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 19, 0, 2359)
       )
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "CHX" -> 5
     )
 
@@ -454,13 +456,13 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("ORP", "WAE", ConnectionType.TRAIN, 1100, 1140, "SE3000", "LN")
     )
 
-    val nonTimetable = mutable.HashMap(
+    val nonTimetable = HashMap(
       "WAE" -> List(
         NonTimetableConnection("WAE", "LBG", ConnectionType.TUBE, 5, 0, 2359)
       )
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "CHX" -> 5
     )
 
@@ -507,7 +509,7 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("WAE", "CHX", ConnectionType.TRAIN, 1140, 1145, "SE4000", "LN")
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), mutable.HashMap())
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap())
     val actual = scanner.getShortestPathTree("ORP")
     val expected = mutable.HashMap(
       "WAE" -> mutable.HashMap(
@@ -551,12 +553,12 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("B", "C", ConnectionType.TRAIN, 1020, 1045, "CS1001", "LN")
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "A" -> 1,
       "B" -> 1
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), interchange)
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), interchange)
     val actual = scanner.getJourney("A", "C", 900)
     val expected = Journey(List(
       Leg(List(
@@ -583,11 +585,11 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
       TimetableConnection("C", "D", ConnectionType.TRAIN, 1020, 1045, "CS1001", "LN")
     )
 
-    val interchange = mutable.HashMap(
+    val interchange = HashMap(
       "C" -> 1
     )
 
-    val scanner = new ConnectionScanAlgorithm(timetable, mutable.HashMap(), interchange)
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), interchange)
     val actual = scanner.getJourney("A", "D", 900)
     val expected = Journey(List(
       Leg(List(

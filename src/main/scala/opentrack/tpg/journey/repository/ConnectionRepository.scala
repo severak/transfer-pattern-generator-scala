@@ -1,11 +1,13 @@
 package opentrack.tpg.journey.repository
 
-import java.time.{LocalDate}
+import java.time.LocalDate
 import java.time.format.{DateTimeFormatter, TextStyle}
 import java.util.Locale
 
 import opentrack.tpg.journey._
 import scalikejdbc._
+
+import scala.collection.immutable.HashMap
 
 /**
   * Created by linus on 08/10/16.
