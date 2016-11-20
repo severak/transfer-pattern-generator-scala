@@ -29,7 +29,7 @@ class FindTransferPatterns(patternRepository: TransferPatternRepository, station
       patternRepository.storeTransferPatterns(station, csa.getShortestPathTree(station))
 
       numDone += 1
-      println(s"Done $station ($numDone of {${stations.size})")
+      println(s"Done $station ($numDone of ${stations.size})")
     }
 
     patternRepository.updateLastScanDate(scanDate)
