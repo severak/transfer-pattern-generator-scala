@@ -13,10 +13,10 @@ class StationRepository() {
     sql"SELECT stop_code FROM stops WHERE stop_code != ''".map(crsOnly).list.apply()
   }
 
-  val interchangeMap = (rs: WrappedResultSet) => rs.string("station") -> rs.int("duration")
+  val interchangeMap = (rs: WrappedResultSet) => rs.string("from_stop_id") -> rs.int("min_transfer_time")
 
   lazy val interchange: Interchange = DB localTx { implicit session =>
-    sql"SELECT station, duration FROM interchange".map(interchangeMap).list.apply().toMap[Station, Duration]
+    sql"SELECT from_stop_id, min_transfer_time FROM transfers".map(interchangeMap).list.apply().toMap[Station, Duration]
   }
 
 }

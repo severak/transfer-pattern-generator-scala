@@ -9,9 +9,9 @@ import scala.collection.parallel.ForkJoinTaskSupport
 /**
   * Created by linus on 08/10/16.
   */
-class FindTransferPatterns(patternRepository: TransferPatternRepository, stationRepository: StationRepository, connectionRepository: ConnectionRepository) {
+object FindTransferPatterns {
 
-  def run() = {
+  def apply(patternRepository: TransferPatternRepository, stationRepository: StationRepository, connectionRepository: ConnectionRepository) = {
 
     val scanDate = patternRepository.nextScanDate
     val stations = stationRepository.stations
@@ -20,8 +20,6 @@ class FindTransferPatterns(patternRepository: TransferPatternRepository, station
     val timetable = connectionRepository.getTimetableConnections(scanDate)
     val nonTimetable = connectionRepository.getNonTimetableConnections(scanDate)
     var numDone = 0
-
-    stations.par.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(9))
 
     for (station <- stations.par) {
       val csa = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
