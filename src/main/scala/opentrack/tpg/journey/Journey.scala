@@ -23,7 +23,7 @@ case class Journey(legs: List[Leg]) {
   }
 
   lazy val hash = {
-    origin + destination + legs.filter(!_.isTransfer).map(l => l.origin + l.destination).mkString
+    legs.filter(!_.isTransfer).map(l => l.origin + l.destination).mkString
   }
 
 }

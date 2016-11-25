@@ -28,7 +28,7 @@ class JourneySpec extends FlatSpec with Matchers {
   )
 
   "A journey" should "calculate it's hash" in {
-    journey.hash should be ("ORPCHXORPWAE")
+    journey.hash should be ("ORPWAE")
   }
 
   it should "calculate it's departure time" in {

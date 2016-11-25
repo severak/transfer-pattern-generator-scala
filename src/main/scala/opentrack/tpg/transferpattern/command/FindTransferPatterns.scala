@@ -4,7 +4,8 @@ import opentrack.tpg.journey.repository.{ConnectionRepository, StationRepository
 import opentrack.tpg.planner.ConnectionScanAlgorithm
 import opentrack.tpg.transferpattern.repository.TransferPatternRepository
 
-import scala.collection.parallel.ForkJoinTaskSupport
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 /**
   * Created by linus on 08/10/16.
@@ -13,7 +14,7 @@ object FindTransferPatterns {
 
   def apply(patternRepository: TransferPatternRepository, stationRepository: StationRepository, connectionRepository: ConnectionRepository) = {
 
-    val scanDate = patternRepository.nextScanDate
+    val scanDate = Await.result(patternRepository.nextScanDate, 5 seconds)
     val stations = stationRepository.stations
     val interchange = stationRepository.interchange
 
@@ -21,16 +22,16 @@ object FindTransferPatterns {
     val nonTimetable = connectionRepository.getNonTimetableConnections(scanDate)
     var numDone = 0
 
-    for (station <- stations.par) {
+    for (station <- stations.par) yield {
       val csa = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
-
-      patternRepository.storeTransferPatterns(station, csa.getShortestPathTree(station))
 
       numDone += 1
       println(s"Done $station ($numDone of ${stations.size})")
+
+      patternRepository.storeTransferPatterns(station, csa.getShortestPathTree(station))
     }
 
-    patternRepository.updateLastScanDate(scanDate)
+    Await.result(patternRepository.updateLastScanDate(scanDate), 5 seconds)
   }
 
 }

@@ -38,19 +38,17 @@ class ConnectionRepository() {
 
     val connections =
       for (
-        (service, trip: List[TripStop]) <- stops.groupBy(_.service);
+        (service, trip) <- stops.groupBy(_.service);
         i <- 0 until trip.length - 1 if trip(i).departureTime <= trip(i + 1).arrivalTime
-      ) yield {
-        TimetableConnection(
-          trip(i).stop,
-          trip(i + 1).stop,
-          ConnectionType.TRAIN,
-          trip(i).departureTime,
-          trip(i + 1).arrivalTime,
-          trip(i).service,
-          "LN"
-        )
-      }
+      ) yield TimetableConnection(
+        trip(i).stop,
+        trip(i + 1).stop,
+        ConnectionType.TRAIN,
+        trip(i).departureTime,
+        trip(i + 1).arrivalTime,
+        service,
+        "LN"
+      )
 
     connections.toList.sortBy(_.arrivalTime)
   }
