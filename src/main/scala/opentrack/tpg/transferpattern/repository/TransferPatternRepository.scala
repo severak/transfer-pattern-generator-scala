@@ -26,13 +26,14 @@ class TransferPatternRepository(redis: RedisClient)(implicit val context: Execut
   }
 
   def storeTransferPatterns(station: Station, patterns: MST) = {
-    val futures =
-      for (
-        (station, journeys) <- patterns;
-        (time, journey) <- journeys if journey.legs.length < 10
-      ) yield redis.sadd(journey.origin + journey.destination, journey.hash)
+    val tx = redis.transaction()
 
-    Await.result(Future.sequence(futures), 60 seconds)
+    for (
+      (station, journeys) <- patterns;
+      (time, journey) <- journeys if journey.legs.length < 10
+    ) yield tx.sadd(journey.origin + journey.destination, journey.hash)
+
+    Await.result(tx.exec(), 60 seconds)
   }
 
 }
