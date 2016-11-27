@@ -4,37 +4,51 @@ import java.time.LocalDate
 import java.time.format.{DateTimeFormatter, TextStyle}
 import java.util.Locale
 
+import com.github.mauricio.async.db.RowData
+import com.github.mauricio.async.db.Connection
+import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
+
 import opentrack.tpg.journey._
-import scalikejdbc._
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+
 
 case class TripStop(stop: Station, departureTime: Time, arrivalTime: Time, service: Service)
 
 /**
   * Created by linus on 08/10/16.
   */
-class ConnectionRepository() {
+class ConnectionRepository(db: Connection) {
 
-  val stopBuilder = (rs: WrappedResultSet) => TripStop(
-    rs.string("parent_station"),
-    rs.int("departure_time"),
-    rs.int("arrival_time"),
-    rs.string("train_uid")
-  )
+  private def rowToTripStop(row: RowData) = {
+    TripStop(
+      row("parent_station").asInstanceOf[String],
+      row("departure_time").asInstanceOf[Long].toInt,
+      row("arrival_time").asInstanceOf[Long].toInt,
+      row("train_uid").asInstanceOf[String]
+    )
+  }
 
-  def getTimetableConnections(dateTime: LocalDate): TimetableSchedule = DB localTx { implicit session =>
+  def getTimetableConnections(dateTime: LocalDate): TimetableSchedule = {
     val dow = dateTime.getDayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase
     val date = dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-    val stops = sql"""
-    SELECT TIME_TO_SEC(departure_time) as departure_time, TIME_TO_SEC(arrival_time) as arrival_time, parent_station, train_uid
-    FROM stop_times
-    JOIN trips USING(trip_id)
-    JOIN calendar USING(service_id)
-    JOIN stops USING(stop_id)
-    WHERE ${date} BETWEEN start_date AND end_date
-    AND ${SQLSyntax.createUnsafely(dow)} = 1
-    ORDER BY trip_id, stop_sequence
-    """.map(stopBuilder).list.apply()
+    val future = db.sendQuery(s"""
+      SELECT TIME_TO_SEC(departure_time) as departure_time, TIME_TO_SEC(arrival_time) as arrival_time, parent_station, train_uid
+      FROM stop_times
+      JOIN trips USING(trip_id)
+      JOIN calendar USING(service_id)
+      JOIN stops USING(stop_id)
+      WHERE "${date}" BETWEEN start_date AND end_date
+      AND ${dow} = 1
+      ORDER BY trip_id, stop_sequence
+    """).map(queryResult => queryResult.rows match {
+      case Some(rows) => rows.map(rowToTripStop).toList
+      case None => List()
+    })
+
+    val stops = Await.result(future, 60 seconds)
 
     val connections =
       for (
@@ -53,36 +67,45 @@ class ConnectionRepository() {
     connections.toList.sortBy(_.arrivalTime)
   }
 
-  val nonTimetableConnectionBuilder = (rs: WrappedResultSet) => NonTimetableConnection(
-    rs.string("origin"),
-    rs.string("destination"),
-    ConnectionType.withName(rs.string("mode").toLowerCase),
-    rs.int("duration"),
-    rs.int("start_time"),
-    rs.int("end_time")
-  )
-
-  def getNonTimetableConnections(dateTime: LocalDate): NonTimetableSchedule = DB localTx { implicit session =>
+  def getNonTimetableConnections(dateTime: LocalDate): NonTimetableSchedule = {
     val dow = dateTime.getDayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase
     val date = dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    val future = db.sendQuery(s"""
+      SELECT
+          from_stop_id as origin,
+          to_stop_id as destination,
+          link_secs as duration,
+          mode,
+          TIME_TO_SEC(start_time) as start_time,
+          TIME_TO_SEC(end_time) as end_time
+      FROM links
+      WHERE "${date}" BETWEEN start_date AND end_date
+      AND ${dow} = 1
+      """
+    ).map(queryResult => queryResult.rows match {
+      case Some(rows) => rows.map(rowToNonTimetableConnection).toList
+      case None => List()
+    })
 
-    sql"""
-    SELECT
-        from_stop_id as origin,
-        to_stop_id as destination,
-        link_secs as duration,
-        mode,
-        TIME_TO_SEC(start_time) as start_time,
-        TIME_TO_SEC(end_time) as end_time
-    FROM links
-    WHERE ${date} BETWEEN start_date AND end_date
-    AND ${SQLSyntax.createUnsafely(dow)} = 1
-    """.map(nonTimetableConnectionBuilder).list.apply().foldLeft(Map[Station, List[NonTimetableConnection]]()) { (result: NonTimetableSchedule, connection: NonTimetableConnection) =>
+    val connections = Await.result(future, 10 seconds)
+
+    connections.foldLeft(Map[Station, List[NonTimetableConnection]]()) { (result: NonTimetableSchedule, connection: NonTimetableConnection) =>
       result.get(connection.origin) match {
         case Some(l) => result + (connection.origin -> (l :+ connection))
         case None => result + (connection.origin -> List(connection))
       }
     }
+  }
+
+  private def rowToNonTimetableConnection(row: RowData) = {
+    NonTimetableConnection(
+      row("origin").asInstanceOf[String],
+      row("destination").asInstanceOf[String],
+      ConnectionType.withName(row("mode").asInstanceOf[String].toLowerCase),
+      row("duration").asInstanceOf[Int],
+      row("start_time").asInstanceOf[Long].toInt,
+      row("end_time").asInstanceOf[Long].toInt
+    )
   }
 
 }

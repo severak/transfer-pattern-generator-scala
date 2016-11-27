@@ -1,22 +1,33 @@
 package opentrack.tpg.journey.repository
 
 import opentrack.tpg.journey.{Duration, Interchange, Station}
-import scalikejdbc._
+
+import com.github.mauricio.async.db.{Connection, RowData}
+import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
+
+import scala.concurrent.Future
 
 /**
   * Created by linus on 08/10/16.
   */
-class StationRepository() {
-  val crsOnly = (rs: WrappedResultSet) => rs.string("stop_code")
+class StationRepository(db: Connection) {
 
-  lazy val stations: List[Station] = DB localTx { implicit session =>
-    sql"SELECT stop_code FROM stops WHERE stop_code != ''".map(crsOnly).list.apply()
+  lazy val stations: Future[List[Station]] = {
+    db.sendQuery("SELECT stop_code FROM stops WHERE stop_code != ''").map(queryResult => queryResult.rows match {
+      case Some(rows) => rows.map(row => row("stop_code").asInstanceOf[String]).toList
+      case None => List()
+    })
   }
 
-  val interchangeMap = (rs: WrappedResultSet) => rs.string("from_stop_id") -> rs.int("min_transfer_time")
+  lazy val interchange: Future[Interchange] = {
+    db.sendQuery("SELECT from_stop_id, min_transfer_time FROM transfers").map(queryResult => queryResult.rows match {
+      case Some(rows) => rows.map(rowToKeyValue).toMap[Station, Duration]
+      case None => Map()
+    })
+  }
 
-  lazy val interchange: Interchange = DB localTx { implicit session =>
-    sql"SELECT from_stop_id, min_transfer_time FROM transfers".map(interchangeMap).list.apply().toMap[Station, Duration]
+  private def rowToKeyValue(row: RowData) = {
+    row("from_stop_id").asInstanceOf[String] -> row("min_transfer_time").asInstanceOf[Int]
   }
 
 }

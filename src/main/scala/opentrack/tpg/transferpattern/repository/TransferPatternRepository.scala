@@ -1,39 +1,42 @@
 package opentrack.tpg.transferpattern.repository
 
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import org.joda.time.{LocalDate => JodaDate}
 
+import com.github.mauricio.async.db.Connection
 import opentrack.tpg.journey.{MST, Station}
-import redis.RedisClient
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration._
+import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 
 /**
   * Created by linus on 08/10/16.
   */
-class TransferPatternRepository(redis: RedisClient)(implicit val context: ExecutionContext) {
+class TransferPatternRepository(db: Connection) {
 
   def nextScanDate = {
-    redis.get("last_scan").map {
-      case Some(result) => LocalDate.parse(result.utf8String, DateTimeFormatter.ISO_LOCAL_DATE).plusDays(1)
+    db.sendQuery("SELECT date FROM last_transfer_pattern_scan").map(queryResult => queryResult.rows match {
+      case Some(rows) => LocalDate.parse(rows.head("date").asInstanceOf[JodaDate].toString("yyyy-MM-dd")).plusDays(1)
       case None => LocalDate.now().plusDays(1)
-    }
+    })
   }
 
   def updateLastScanDate(date: LocalDate) = {
-    redis.set("last_scan", date.format(DateTimeFormatter.ISO_LOCAL_DATE))
+    db.sendPreparedStatement("UPDATE last_transfer_pattern_scan SET date = ?", Array(JodaDate.parse(date.toString)))
   }
 
   def storeTransferPatterns(station: Station, patterns: MST) = {
-    val tx = redis.transaction()
+    val inserts =
+      for (
+        (station, journeys) <- patterns;
+        (time, journey) <- journeys if journey.legs.length < 10
+      ) yield s"('${journey.origin}${journey.destination}','${journey.hash}')"
 
-    for (
-      (station, journeys) <- patterns;
-      (time, journey) <- journeys if journey.legs.length < 10
-    ) yield tx.sadd(journey.origin + journey.destination, journey.hash)
-
-    Await.result(tx.exec(), 60 seconds)
+    if (inserts.nonEmpty) {
+      Some(db.sendQuery("INSERT IGNORE INTO transfer_patterns VALUES " + inserts.toSet.mkString(",")))
+    }
+    else {
+      None
+    }
   }
 
 }
