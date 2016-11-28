@@ -1,12 +1,12 @@
 package opentrack.tpg.transferpattern.repository
 
 import java.time.LocalDate
-import org.joda.time.{LocalDate => JodaDate}
 
+import org.joda.time.{LocalDate => JodaDate}
 import com.github.mauricio.async.db.Connection
 import opentrack.tpg.journey.{MST, Station}
-
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
+import opentrack.tpg.transferpattern.TransferPattern
 
 /**
   * Created by linus on 08/10/16.
@@ -24,12 +24,8 @@ class TransferPatternRepository(db: Connection) {
     db.sendPreparedStatement("UPDATE last_transfer_pattern_scan SET date = ?", Array(JodaDate.parse(date.toString)))
   }
 
-  def storeTransferPatterns(station: Station, patterns: MST) = {
-    val inserts =
-      for (
-        (station, journeys) <- patterns;
-        (time, journey) <- journeys if journey.legs.length < 10
-      ) yield s"('${journey.origin}${journey.destination}','${journey.hash}')"
+  def storeTransferPatterns(patterns: Set[TransferPattern]) = {
+    val inserts = patterns.map(tp => s"('${tp.journey}','${tp.pattern}')")
 
     if (inserts.nonEmpty) {
       Some(db.sendQuery("INSERT IGNORE INTO transfer_patterns VALUES " + inserts.toSet.mkString(",")))

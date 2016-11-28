@@ -17,7 +17,7 @@ package object journey {
   type Interchange = Map[Station, Duration]
   type NonTimetableSchedule = Map[Station, List[NonTimetableConnection]]
   type TimetableSchedule = List[TimetableConnection]
-  type MST = mutable.HashMap[String, mutable.HashMap[Int, Journey]]
+  type MST = mutable.HashMap[Station, mutable.HashMap[Time, Journey]]
 
   object ConnectionType extends Enumeration {
     val TRAIN = Value("train")

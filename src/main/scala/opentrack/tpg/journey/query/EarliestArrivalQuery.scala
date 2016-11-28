@@ -17,7 +17,7 @@ object EarliestArrivalQuery {
     val timetable = connectionRepository.getTimetableConnections(LocalDate.now())
     val nonTimetable = connectionRepository.getNonTimetableConnections(LocalDate.now())
     val interchange = Await.result(stationRepository.interchange, 5 seconds)
-    val csa = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
+    val csa = new ConnectionScanAlgorithm(timetable._2, nonTimetable, interchange)
 
     println(csa.getJourney("BGA", "NRW", 900))
   }

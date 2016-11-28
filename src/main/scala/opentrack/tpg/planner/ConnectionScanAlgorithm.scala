@@ -89,8 +89,10 @@ class ConnectionScanAlgorithm(timetable: TimetableSchedule, nonTimetable: NonTim
   private def getJourneyFromConnections(origin: Station, destination: Station): Option[Journey] = {
     @tailrec def getLegs(cOpt: Option[Connection], leg: List[Connection], journey: List[Leg]): Option[List[Leg]] = cOpt match {
       case None => None
-      case Some(c) if c.origin == origin && leg.nonEmpty && c.requiresInterchangeWith(leg.head) => Some(Leg(List(c)) :: Leg(leg) :: journey)
-      case Some(c) if c.origin == origin => Some(Leg(c :: leg) :: journey)
+      case Some(c) if c.origin == origin && leg.nonEmpty && c.requiresInterchangeWith(leg.head) =>
+        Some(Leg(List(c)) :: Leg(leg) :: journey)
+      case Some(c) if c.origin == origin =>
+        Some(Leg(c :: leg) :: journey)
       case Some(c) =>
         if (leg.nonEmpty && c.requiresInterchangeWith(leg.head))
           getLegs(connections.get(c.origin), List(c), Leg(leg) :: journey)

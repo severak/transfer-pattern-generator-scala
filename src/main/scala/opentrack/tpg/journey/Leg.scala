@@ -30,6 +30,30 @@ case class Leg(connections: List[Connection]) extends Connection {
     else arrivalTime - departureTime
   }
 
+  lazy val service: Option[Service] = connections.head match {
+    case c: NonTimetableConnection => None
+    case c: TimetableConnection => Some(c.service)
+  }
+
+  def getReplacement(leg: Leg, destination: Station): Leg = {
+    val origin = leg.timetableConnections.head
+
+    val newConnections = connections
+      .dropWhile { case (c: TimetableConnection) =>
+        c.origin != origin.origin || c.departureTime < origin.departureTime
+      }
+      .takeWhile { case (c: TimetableConnection) =>
+        c.origin != destination
+      }
+
+    if (newConnections.isEmpty) leg
+    else Leg(newConnections)
+  }
+
+  lazy val timetableConnections: List[TimetableConnection] = {
+    connections.flatMap { case t: TimetableConnection => Some(t) }
+  }
+
   override def requiresInterchangeWith(connection: Connection): Boolean = true
 }
 

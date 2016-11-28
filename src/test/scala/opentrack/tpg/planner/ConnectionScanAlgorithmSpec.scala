@@ -5,7 +5,6 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
-import scala.collection.parallel.immutable
 
 /**
   * Created by linus on 30/09/16.

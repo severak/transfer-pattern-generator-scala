@@ -30,7 +30,7 @@ class ConnectionRepository(db: Connection) {
     )
   }
 
-  def getTimetableConnections(dateTime: LocalDate): TimetableSchedule = {
+  def getTimetableConnections(dateTime: LocalDate): (Map[Service, Leg], TimetableSchedule) = {
     val dow = dateTime.getDayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toLowerCase
     val date = dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
@@ -64,7 +64,12 @@ class ConnectionRepository(db: Connection) {
         "LN"
       )
 
-    connections.toList.sortBy(_.arrivalTime)
+    val services =
+      for (
+        (service, trip) <- connections.groupBy(_.service)
+      ) yield service -> Leg(trip.toList)
+
+    (services, connections.toList.sortBy(_.arrivalTime))
   }
 
   def getNonTimetableConnections(dateTime: LocalDate): NonTimetableSchedule = {
