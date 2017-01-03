@@ -120,7 +120,8 @@ class ConnectionScanAlgorithm(timetable: TimetableSchedule, nonTimetable: NonTim
 
       earliestArrivals.map { case (station, time) =>
         getJourneyFromConnections(origin, station).map(journey => {
-          nextDepartureTime = Math.min(nextDepartureTime, journey.departureTime)
+          if (journey.hasTimetableLegs)
+            nextDepartureTime = Math.min(nextDepartureTime, journey.departureTime)
 
           bestJourneys.get(station) match {
             case None => bestJourneys.put(station, mutable.HashMap(time -> journey))
@@ -137,6 +138,8 @@ class ConnectionScanAlgorithm(timetable: TimetableSchedule, nonTimetable: NonTim
       var newTimetable = ListBuffer[TimetableConnection]()
       arrivals = mutable.HashMap(origin -> departureTime)
       connections = mutable.HashMap()
+
+      checkForBetterNonTimetableConnections(origin, departureTime)
 
       workingTimetable.foreach(connection => {
         if (canGetToConnection(connection)) {

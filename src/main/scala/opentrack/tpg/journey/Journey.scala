@@ -22,8 +22,10 @@ case class Journey(legs: List[Leg]) {
     ttLegs.headOption.map(leg => leg.arrivalTime + ntLegs.map(_.duration).sum).sum
   }
 
-  lazy val hash = {
+  val hash = {
     legs.filter(!_.isTransfer).map(l => l.origin + l.destination).mkString
   }
+
+  val hasTimetableLegs = hash.nonEmpty
 
 }

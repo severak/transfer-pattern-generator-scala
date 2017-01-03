@@ -35,12 +35,20 @@ case class Leg(connections: List[Connection]) extends Connection {
     case c: TimetableConnection => Some(c.service)
   }
 
+  /**
+   * If this service stops at the origin of the given leg and it does not depart the origin station any earlier, then
+   * return a segment of this service between the leg origin and given destination. Otherwise return the given leg.
+   *
+   * This is used to check whether the given leg can be replaced entirely by this service.
+   *
+   * @param leg
+   * @param destination
+   * @return
+   */
   def getReplacement(leg: Leg, destination: Station): Leg = {
-    val origin = leg.timetableConnections.head
-
     val newConnections = connections
       .dropWhile { case (c: TimetableConnection) =>
-        c.origin != origin.origin || c.departureTime < origin.departureTime
+        c.origin != leg.origin || c.departureTime < leg.departureTime
       }
       .takeWhile { case (c: TimetableConnection) =>
         c.origin != destination
