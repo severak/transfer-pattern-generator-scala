@@ -54,7 +54,7 @@ case class Leg(connections: List[Connection]) extends Connection {
         c.origin != destination
       }
 
-    if (newConnections.isEmpty) leg
+    if (newConnections.isEmpty || newConnections.last.destination != destination) leg
     else Leg(newConnections)
   }
 

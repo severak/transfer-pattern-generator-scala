@@ -28,9 +28,10 @@ object FindTransferPatterns {
     var numDone = 0
 
 //    val csa = new ConnectionScanAlgorithm(timetable, nonTimetable, interchange)
-//    val mst = csa.getShortestPathTree("MYB")
+//    val mst = csa.getShortestPathTree("CHX")
 //    val cleanedTree = mstCleaner.cleanTree(mst)
-//
+//    val mstTBW = mst.get("TBW")
+//    val cleanedTBW = cleanedTree.filter(_.journey == "CHXTBW")
 //    val futureOptions = List(patternRepository.storeTransferPatterns(cleanedTree))
 
     val futureOptions =
