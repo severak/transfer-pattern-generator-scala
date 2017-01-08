@@ -116,12 +116,13 @@ class ConnectionScanAlgorithm(timetable: TimetableSchedule, nonTimetable: NonTim
     }
 
     def mergeMST(earliestArrivals: mutable.HashMap[Station, Time]) = {
-      var nextDepartureTime = Integer.MAX_VALUE
+      var nextDepartureTime = Integer.MAX_VALUE - 1
 
       earliestArrivals.map { case (station, time) =>
         getJourneyFromConnections(origin, station).map(journey => {
-          if (journey.hasTimetableLegs)
+          if (journey.hasTimetableLegs) {
             nextDepartureTime = Math.min(nextDepartureTime, journey.departureTime)
+          }
 
           bestJourneys.get(station) match {
             case None => bestJourneys.put(station, mutable.HashMap(time -> journey))
@@ -142,15 +143,15 @@ class ConnectionScanAlgorithm(timetable: TimetableSchedule, nonTimetable: NonTim
       checkForBetterNonTimetableConnections(origin, departureTime)
 
       workingTimetable.foreach(connection => {
-        if (canGetToConnection(connection)) {
+        if (connection.departureTime > departureTime) {
           newTimetable = newTimetable += connection
+        }
 
-          if (connectionIsBetter(connection)) {
-            connections.put(connection.destination, connection)
-            arrivals.put(connection.destination, connection.arrivalTime)
+        if (canGetToConnection(connection) && connectionIsBetter(connection)) {
+          connections.put(connection.destination, connection)
+          arrivals.put(connection.destination, connection.arrivalTime)
 
-            checkForBetterNonTimetableConnections(connection.destination, connection.arrivalTime)
-          }
+          checkForBetterNonTimetableConnections(connection.destination, connection.arrivalTime)
         }
       })
 

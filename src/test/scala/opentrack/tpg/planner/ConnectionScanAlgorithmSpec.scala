@@ -598,4 +598,66 @@ class ConnectionScanAlgorithmSpec extends FlatSpec with Matchers {
     ))
     actual should be(Some(expected))
   }
+
+  /**
+   * This test catches a bug where illogical journeys were returned because unreachable connections were removed from the
+   * working timetable. If two services following a similar path set off at 1000 and 1002 latter is removed from the
+   * working timetable as interchange prevents interchange. However the next iteration of the shortest path tree scan
+   * might require that service. The correct behaviour is to remove connections before the departure time.
+   *
+   * This bug was present with a shortest path tree between CHX and TBW, involving the following services:
+   *
+   * +---------+-----------+
+   * | trip_id | train_uid |
+   * +---------+-----------+
+   * |   51757 | W82240    |
+   * |   52479 | W83259    |
+   * |   52539 | W83361    |
+   * |   53742 | W86864    |
+   * +---------+-----------+
+   *
+   * (Busy afternoon services)
+   */
+  it should "not remove unreachable connections" in {
+    val timetable = List(
+      TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1000, 1005, "SE1000", "LN"),
+      TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1002, 1007, "SE2000", "LN"),
+      TimetableConnection("WAE", "ORP", ConnectionType.TRAIN, 1006, 1030, "SE1000", "LN"),
+      TimetableConnection("WAE", "ORP", ConnectionType.TRAIN, 1008, 1035, "SE2000", "LN"),
+      TimetableConnection("ORP", "TON", ConnectionType.TRAIN, 1036, 1100, "SE2000", "LN")
+    )
+
+    val scanner = new ConnectionScanAlgorithm(timetable, HashMap(), HashMap("WAE" -> 10))
+    val actual = scanner.getShortestPathTree("CHX")
+    val expected = mutable.HashMap(
+      "WAE" -> mutable.HashMap(
+        1005 -> Journey(List(
+          Leg(List(TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1000, 1005, "SE1000", "LN")))
+        )),
+        1007 -> Journey(List(
+          Leg(List(TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1002, 1007, "SE2000", "LN")))
+        ))
+      ),
+      "ORP" -> mutable.HashMap(
+        1030 -> Journey(List(
+          Leg(List(TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1000, 1005, "SE1000", "LN"),
+                   TimetableConnection("WAE", "ORP", ConnectionType.TRAIN, 1006, 1030, "SE1000", "LN")))
+        )),
+        1035 -> Journey(List(
+          Leg(List(TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1002, 1007, "SE2000", "LN"),
+                   TimetableConnection("WAE", "ORP", ConnectionType.TRAIN, 1008, 1035, "SE2000", "LN")))
+        ))
+      ),
+      "TON" -> mutable.HashMap(
+        1100 -> Journey(List(
+          Leg(List(TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 1002, 1007, "SE2000", "LN"),
+                   TimetableConnection("WAE", "ORP", ConnectionType.TRAIN, 1008, 1035, "SE2000", "LN"),
+                   TimetableConnection("ORP", "TON", ConnectionType.TRAIN, 1036, 1100, "SE2000", "LN")
+        ))
+      ))
+    ))
+
+    actual should be(expected)
+  }
+
 }
