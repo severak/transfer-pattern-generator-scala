@@ -1,10 +1,10 @@
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.1"
 
 libraryDependencies ++= Seq(
   "org.scalactic"       %% "scalactic"            % "3.0.0",
   "org.scalatest"       %% "scalatest"            % "3.0.0" % "test",
   "ch.qos.logback"      %  "logback-classic"      % "1.1.7",
-  "com.github.mauricio" %% "mysql-async"          % "0.2.20"
+  "com.github.mauricio" %% "mysql-async"          % "0.2.21"
 )
 
 lazy val commonSettings = Seq(
