@@ -53,7 +53,7 @@ class LegSpec extends FlatSpec with Matchers {
       )
     )
 
-    service.getReplacement(pointlessLeg, "ORP") should be (mergedLeg)
+    service.getReplacement(pointlessLeg, "ORP") should be (Some(mergedLeg))
   }
 
   it should "be able to merge to an earlier leg where the service terminates" in {
@@ -77,7 +77,7 @@ class LegSpec extends FlatSpec with Matchers {
       )
     )
 
-    service.getReplacement(pointlessLeg, "ORP") should be (mergedLeg)
+    service.getReplacement(pointlessLeg, "ORP") should be (Some(mergedLeg))
   }
 
   it should "check the origin of the new service is reachable" in {
@@ -94,7 +94,7 @@ class LegSpec extends FlatSpec with Matchers {
       )
     )
 
-    service.getReplacement(expected, "ORP") should be (expected)
+    service.getReplacement(expected, "ORP") should be (None)
   }
 
 

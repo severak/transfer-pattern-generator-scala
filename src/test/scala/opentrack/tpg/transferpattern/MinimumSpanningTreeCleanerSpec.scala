@@ -166,4 +166,45 @@ class MinimumSpanningTreeCleanerSpec extends FlatSpec with Matchers {
   }
 
 
+  it should "condense multiple unnecessary legs" in {
+    val services = Map(
+      "LN0000" -> Leg(List(
+        TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 900, 915, "LN0000", "LN"),
+        TimetableConnection("WAE", "LBG", ConnectionType.TRAIN, 916, 920, "LN0000", "LN"),
+        TimetableConnection("LBG", "ORP", ConnectionType.TRAIN, 921, 925, "LN0000", "LN")
+      )),
+      "LN0001" -> Leg(List(
+        TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 855, 900, "LN0001", "LN"),
+        TimetableConnection("WAE", "LBG", ConnectionType.TRAIN, 901, 906, "LN0001", "LN")
+      )),
+      "LN0002" -> Leg(List(
+        TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 850, 855, "LN0002", "LN")
+      ))
+    )
+
+    val expectedWithUnnecessaryChange = mutable.HashMap(
+      "ORP" -> mutable.HashMap(
+        925 -> Journey(List(
+          Leg(List(
+            TimetableConnection("CHX", "WAE", ConnectionType.TRAIN, 850, 855, "LN0002", "LN")
+          )),
+          Leg(List(
+            TimetableConnection("WAE", "LBG", ConnectionType.TRAIN, 901, 906, "LN0001", "LN")
+          )),
+          Leg(List(
+            TimetableConnection("LBG", "ORP", ConnectionType.TRAIN, 921, 925, "LN0000", "LN")
+          ))
+        ))
+      )
+    )
+
+    val mstCleaner = new MinimumSpanningTreeCleaner(services)
+    val actualCleaned = mstCleaner.cleanTree(expectedWithUnnecessaryChange)
+    val expectedCleaned = Set(
+        TransferPattern("CHXORP", "CHXORP")
+    )
+
+    actualCleaned should be (expectedCleaned)
+  }
+
 }
